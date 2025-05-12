@@ -27,6 +27,7 @@ import "../../components/ha-svg-icon";
 import { getEndpointDeviceTypes } from "../matter-endpoint-view";
 import { bindingContext } from "./context";
 import { showNodeBindingDialog } from "../../components/dialogs/binding/show-node-binding-dialog";
+import { showAccessControlDialog } from "../../components/dialogs/acl/show-access-control-dialog";
 
 function getNodeDeviceTypes(node: MatterNode): DeviceType[] {
   const uniqueEndpoints = new Set(
@@ -58,6 +59,7 @@ export class NodeDetails extends LitElement {
     if (!this.node) return html``;
 
     const bindings = this.node.attributes[this.endpoint + "/30/0"];
+    const acl = this.node.attributes[this.endpoint + "/31/0"];
 
     return html`
       <md-list>
@@ -108,11 +110,20 @@ export class NodeDetails extends LitElement {
         : html`<md-outlined-button @click=${this._searchUpdate}>Update<ha-svg-icon slot="icon" .path=${mdiUpdate}></ha-svg-icon></md-outlined-button>`}
 
           ${bindings
-            ? html` 
-              <md-outlined-button @click=${this._binding}> 
-                Binding 
-                <ha-svg-icon slot="icon" .path=${mdiLink}></ha-svg-icon>
-              </md-outlined-button>
+            ? html`
+                <md-outlined-button @click=${this._binding}>
+                  Binding
+                  <ha-svg-icon slot="icon" .path=${mdiLink}></ha-svg-icon>
+                </md-outlined-button>
+              `
+            : nothing}
+
+          ${acl
+            ? html`
+                <md-outlined-button @click=${this._showAccessControlDialog}>
+                  ACL
+                  <ha-svg-icon slot="icon" .path=${mdiLink}></ha-svg-icon>
+                </md-outlined-button>
               `
             : nothing}
 
@@ -174,6 +185,14 @@ export class NodeDetails extends LitElement {
     try {
       showNodeBindingDialog(this.client!, this.node!, this.endpoint!);
     } catch (err: any) {
+      console.log(err);
+    }
+  }
+
+  private async _showAccessControlDialog() {
+    try {
+      showAccessControlDialog(this.client!, this.node!, this.endpoint!);
+    } catch (err) {
       console.log(err);
     }
   }

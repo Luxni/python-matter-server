@@ -13,11 +13,16 @@ import { preventDefault } from "../../../util/prevent_default";
 import { MatterClient } from "../../../client/client";
 import {
   InputType,
-  AccessControlEntryStruct,
-  AccessControlEntryDataTransformer,
   BindingEntryStruct,
   BindingEntryDataTransformer,
 } from "./model";
+
+import {
+  AccessControlEntryDataTransformer,
+  AccessControlEntryStruct,
+  AccessControlTargetStruct,
+} from "../acl/model";
+
 import { consume } from "@lit/context";
 import { clientContext } from "../../../client/client-context";
 
@@ -49,6 +54,7 @@ export class NodeBindingDialog extends LitElement {
   private fetchACLEntry(targetNodeId: number): AccessControlEntryStruct[] {
     const acl_cluster_raw: [InputType] =
       this.client.nodes[targetNodeId].attributes["0/31/0"];
+
     return Object.values(acl_cluster_raw).map((value: InputType) =>
       AccessControlEntryDataTransformer.transform(value),
     );
@@ -58,7 +64,11 @@ export class NodeBindingDialog extends LitElement {
     const rawBindings = this.fetchBindingEntry();
     try {
       const targetNodeId = rawBindings[index].node;
-      await this.removeNodeAtACLEntry(this.node!.node_id, targetNodeId);
+      await this.removeNodeAtACLEntry(
+        this.node!.node_id,
+        this.endpoint,
+        targetNodeId,
+      );
       const updatedBindings = this.removeBindingAtIndex(rawBindings, index);
       await this.syncBindingUpdates(updatedBindings, index);
     } catch (error) {
@@ -68,12 +78,15 @@ export class NodeBindingDialog extends LitElement {
 
   private async removeNodeAtACLEntry(
     sourceNodeId: number,
+    sourceEndpoint: number,
     targetNodeId: number,
   ): Promise<void> {
     const aclEntries = this.fetchACLEntry(targetNodeId);
 
     const updatedACLEntries = aclEntries
-      .map((entry) => this.removeSubjectAtACL(sourceNodeId, entry))
+      .map((entry) =>
+        this.removeSubjectAtACL(sourceNodeId, sourceEndpoint, entry),
+      )
       .filter((entry): entry is Exclude<typeof entry, null> => entry !== null);
 
     await this.client.setACLEntry(targetNodeId, updatedACLEntries);
@@ -81,6 +94,7 @@ export class NodeBindingDialog extends LitElement {
 
   private removeSubjectAtACL(
     nodeId: number,
+    sourceEndpoint: number,
     entry: AccessControlEntryStruct,
   ): AccessControlEntryStruct | null {
     const shouldRemoveSubject = entry.subjects?.includes(nodeId);
@@ -200,11 +214,17 @@ export class NodeBindingDialog extends LitElement {
       return;
     }
 
+    const targets: AccessControlTargetStruct = {
+      endpoint: targetEndpoint,
+      cluster: undefined,
+      deviceType: undefined,
+    };
+
     const acl_entry: AccessControlEntryStruct = {
       privilege: 5,
       authMode: 2,
       subjects: [this.node!.node_id],
-      targets: undefined,
+      targets: [targets],
       fabricIndex: this.client.connection.serverInfo!.fabric_id,
     };
     const result_acl = await this.add_target_acl(targetNodeId, acl_entry);
