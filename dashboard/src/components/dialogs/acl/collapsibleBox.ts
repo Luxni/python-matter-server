@@ -16,9 +16,9 @@ export class CollapsibleBox extends LitElement {
   render() {
     return html`
       <div class="container">
-        <div class="header" @click="${this.toggleExpand}">
+        <div class="header">
           <slot name="title"></slot>
-          <md-icon-button>
+          <md-icon-button @click="${this.toggleExpand}">
             <ha-svg-icon
               .path=${this.isExpanded ? mdiChevronUp : mdiChevronDown}
             ></ha-svg-icon>

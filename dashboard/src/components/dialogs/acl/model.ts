@@ -1,3 +1,7 @@
+export type AccessControlEntryResponse = {
+  Path: { EndpointId: number; ClusterId: number; AttributeId: number };
+  Status: number;
+};
 
 export type AccessControlEntryRawInput = {
   "1": number;
@@ -8,9 +12,9 @@ export type AccessControlEntryRawInput = {
 };
 
 export type AccessControlTargetStruct = {
-  cluster: number | undefined;
-  endpoint: number | undefined;
-  deviceType: number | undefined;
+  cluster: number | undefined | null;
+  endpoint: number | undefined | null;
+  deviceType: number | undefined | null;
 };
 
 export type AccessControlEntryStruct = {
